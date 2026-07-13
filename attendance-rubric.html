@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApproachUSA — Weekly Participation Rubric</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root {
+    --navy: #0C2340;
+    --navy-l: #143865;
+    --navy-d: #081629;
+    --navy-s: #D9E2F1;
+    --gold: #AE9142;
+    --gold-b: #D39F10;
+    --warm-w: #EFE9D9;
+    --warm-l: #F8F4EC;
+    --paper: #FFFFFF;
+    --paper-w: #F5F0E3;
+    --ink: #1A1A1A;
+    --ink-s: #3D3D3D;
+    --muted: #7A7A7A;
+    --sky: #EDF2F9;
+    --lt-gold: #F5EED2;
+    --green: #26890C;
+    --green-s: #D4EDDA;
+    --red: #DC3545;
+    --red-s: #F8D7DA;
+    --line: #E4E7EC;
+
+    --serif: Cambria, Georgia, "Times New Roman", serif;
+    --sans: Calibri, "Segoe UI", Arial, sans-serif;
+    --mono: Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--warm-l); color: var(--ink);
+    font-family: var(--sans); -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; margin: 0; color: var(--navy); }
+  p { margin: 0; }
+
+  /* HERO */
+  .hero {
+    position: relative; background: var(--navy); color: var(--warm-w);
+    padding: 2.4rem 1.75rem 2rem; overflow: hidden;
+  }
+  .hero::before, .hero::after {
+    content: ""; position: absolute; border: 1.5px solid var(--gold); width: 30px; height: 30px; opacity: 0.85;
+  }
+  .hero::before { top: 16px; left: 16px; border-right: none; border-bottom: none; }
+  .hero::after  { bottom: 16px; right: 16px; border-left: none; border-top: none; }
+  .hero-inner { max-width: 1000px; margin: 0 auto; }
+  .eyebrow {
+    font-family: var(--sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em;
+    color: var(--gold); text-transform: uppercase;
+  }
+  .hero h1 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); line-height: 1.15; margin: 0.45rem 0 0.3rem; letter-spacing: -0.3px; }
+  .hero p.sub { font-family: var(--serif); font-size: 0.98rem; font-style: italic; color: var(--warm-w); opacity: 0.85; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 1.75rem 1.75rem 4rem; }
+
+  /* META CARD */
+  .meta-card {
+    position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+    padding: 1.5rem 1.5rem; margin-bottom: 1.5rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;
+  }
+  .meta-card .corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); }
+  .meta-card .corner.tl { top: 7px; left: 7px; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
+  .meta-card .corner.br { bottom: 7px; right: 7px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+  .field label {
+    display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.35rem;
+  }
+  .field input, .field select {
+    width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--line); border-radius: 6px;
+    font-family: var(--sans); font-size: 0.9rem; color: var(--ink); background: var(--paper-w);
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--gold-b); outline-offset: 1px; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; }
+  .toolbar-group { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .btn {
+    font-family: var(--sans); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 0.55rem 1.1rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: filter 0.15s, transform 0.05s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn--primary { background: var(--navy); color: var(--warm-w); }
+  .btn--primary:hover { filter: brightness(1.15); }
+  .btn--gold { background: var(--gold-b); color: var(--navy-d); }
+  .btn--gold:hover { filter: brightness(1.08); }
+  .btn--secondary { background: var(--paper); color: var(--navy); border-color: var(--navy); }
+  .btn--secondary:hover { background: var(--sky); }
+  .btn--ghost { background: none; color: var(--muted); border-color: var(--line); }
+  .btn--ghost:hover { background: var(--sky); color: var(--navy); }
+  .btn--sm { padding: 0.35rem 0.7rem; font-size: 0.74rem; }
+
+  /* TABLE CARD */
+  .table-card {
+    position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden;
+  }
+  .table-card .corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); z-index: 2; }
+  .table-card .corner.tl { top: 7px; left: 7px; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
+  .table-card .corner.br { bottom: 7px; right: 7px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th {
+    background: var(--navy); color: var(--warm-w); font-family: var(--sans); font-weight: 700;
+    font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: left;
+    padding: 0.75rem 0.85rem;
+  }
+  thead th.center, tbody td.center { text-align: center; }
+  tbody td { padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--warm-l); }
+  tbody tr:hover { background: var(--sky); }
+  .row-num { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; width: 2.2rem; }
+  .student-name { font-family: var(--serif); font-size: 0.98rem; color: var(--navy); }
+  .notes-input {
+    width: 100%; border: none; background: transparent; font-family: var(--sans); font-size: 0.85rem;
+    color: var(--ink-s); padding: 0.3rem 0.4rem; border-radius: 4px;
+  }
+  .notes-input:focus { background: var(--paper); outline: 1px solid var(--line); }
+
+  /* Custom checkbox */
+  .chk {
+    appearance: none; -webkit-appearance: none; width: 22px; height: 22px; border-radius: 5px;
+    border: 1.5px solid var(--line); background: var(--paper); cursor: pointer; position: relative;
+    display: inline-block; vertical-align: middle;
+  }
+  .chk:hover { border-color: var(--gold-b); }
+  .chk:checked { background: var(--navy); border-color: var(--navy); }
+  .chk:checked::after {
+    content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px;
+    border: solid var(--gold); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+  }
+  .chk.participated:checked { background: var(--gold-b); border-color: var(--gold-b); }
+  .chk.participated:checked::after { border-color: var(--navy-d); }
+
+  .empty-state {
+    padding: 3rem 1.5rem; text-align: center; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+  .empty-state h3 { color: var(--navy); font-size: 1.15rem; margin-bottom: 0.4rem; }
+  .empty-state p { font-size: 0.88rem; max-width: 340px; margin: 0 auto; }
+
+  .footer-note { margin-top: 1rem; font-size: 0.78rem; color: var(--muted); text-align: center; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(8,22,41,0.55); z-index: 100;
+    align-items: center; justify-content: center; padding: 1.5rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--paper); border-radius: 10px; max-width: 480px; width: 100%;
+    padding: 1.75rem; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .modal .corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); }
+  .modal .corner.tl { top: 8px; left: 8px; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
+  .modal .corner.br { bottom: 8px; right: 8px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+  .modal h3 { font-size: 1.3rem; margin-bottom: 0.35rem; }
+  .modal .modal-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.1rem; }
+  .modal textarea {
+    width: 100%; min-height: 220px; padding: 0.75rem; border: 1px solid var(--line); border-radius: 6px;
+    font-family: var(--mono); font-size: 0.88rem; color: var(--ink); resize: vertical; background: var(--paper-w);
+    line-height: 1.6;
+  }
+  .modal textarea:focus { outline: 2px solid var(--gold-b); outline-offset: 1px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; }
+  .modal-close {
+    position: absolute; top: 1.1rem; right: 1.1rem; background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.3rem; line-height: 1; padding: 0.2rem;
+  }
+  .modal-close:hover { color: var(--navy); }
+
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--navy); color: var(--warm-w);
+    padding: 0.7rem 1.1rem; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    display: flex; align-items: center; gap: 0.5rem; z-index: 200; opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s; pointer-events: none; border-left: 3px solid var(--gold-b);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar-group { justify-content: stretch; }
+    .toolbar-group .btn { flex: 1; justify-content: center; }
+    thead th, tbody td { padding: 0.5rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">ApproachUSA · Listening &amp; Speaking</span>
+    <h1 style="color: var(--red)">Weekly Participation Rubric</h1>
+    <p class="sub">Mark attendance and participation, jot notes, then export for your records.</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="meta-card">
+    <span class="corner tl"></span><span class="corner br"></span>
+    <div class="field">
+      <label for="metaTeacher">Teacher</label>
+      <input type="text" id="metaTeacher" placeholder="e.g. John">
+    </div>
+    <div class="field">
+      <label for="metaLevel">Level Band</label>
+      <select id="metaLevel">
+        <option value="">Select…</option>
+        <option>Basic</option>
+        <option>Independent</option>
+        <option>Proficient</option>
+        <option>AAP / BP</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="metaWeek">Week Of</label>
+      <input type="date" id="metaWeek">
+    </div>
+    <div class="field">
+      <label for="metaMode">Mode</label>
+      <select id="metaMode">
+        <option value="">Select…</option>
+        <option>In-Person</option>
+        <option>Online</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button class="btn btn--primary" onclick="openModal()">+ Add / Edit Students</button>
+      <button class="btn btn--ghost" id="clearBtn" onclick="clearAll()">Clear Roster</button>
+    </div>
+    <div class="toolbar-group">
+      <button class="btn btn--secondary" onclick="exportXLSX()">⬇ Download XLSX</button>
+      <button class="btn btn--gold" onclick="exportPDF()">⬇ Download PDF</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <span class="corner tl"></span><span class="corner br"></span>
+    <div id="tableWrap">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">🎓</div>
+        <h3>No students yet</h3>
+        <p>Click "Add / Edit Students" and paste in a roster — one name per line.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">Saved automatically in this browser. Clearing browser data will remove it.</p>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <span class="corner tl"></span><span class="corner br"></span>
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3>Add / Edit Students</h3>
+    <p class="modal-sub">One name per line. Existing check marks and notes are kept for names that stay on the list.</p>
+    <textarea id="namesInput" placeholder="Maria Gomez
+Jonas Kim
+Aiko Tanaka"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn--primary" onclick="applyNames()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'approachusa_rubric_v1';
+  let state = {
+    meta: { teacher: '', level: '', week: '', mode: '' },
+    students: [] // { id, name, attended, participated, notes }
+  };
+
+  function uid() { return 'r' + Math.random().toString(36).slice(2, 10); }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) state = JSON.parse(raw);
+    } catch (e) { console.warn('Could not load saved data', e); }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.warn('Could not save data', e); }
+  }
+
+  function renderMeta() {
+    document.getElementById('metaTeacher').value = state.meta.teacher || '';
+    document.getElementById('metaLevel').value = state.meta.level || '';
+    document.getElementById('metaWeek').value = state.meta.week || '';
+    document.getElementById('metaMode').value = state.meta.mode || '';
+  }
+  function syncMetaFromInputs() {
+    state.meta.teacher = document.getElementById('metaTeacher').value;
+    state.meta.level = document.getElementById('metaLevel').value;
+    state.meta.week = document.getElementById('metaWeek').value;
+    state.meta.mode = document.getElementById('metaMode').value;
+    save();
+  }
+  ['metaTeacher','metaLevel','metaWeek','metaMode'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', syncMetaFromInputs);
+    el.addEventListener('change', syncMetaFromInputs);
+  });
+
+  function renderTable() {
+    const wrap = document.getElementById('tableWrap');
+    if (!state.students.length) {
+      wrap.innerHTML = `<div class="empty-state" id="emptyState">
+        <div class="icon">🎓</div>
+        <h3>No students yet</h3>
+        <p>Click "Add / Edit Students" and paste in a roster — one name per line.</p>
+      </div>`;
+      return;
+    }
+    let rows = state.students.map((s, i) => `
+      <tr data-id="${s.id}">
+        <td class="row-num">${i + 1}</td>
+        <td class="student-name">${escapeHtml(s.name)}</td>
+        <td class="center"><input type="checkbox" class="chk" ${s.attended ? 'checked' : ''} onchange="toggleField('${s.id}','attended',this.checked)"></td>
+        <td class="center"><input type="checkbox" class="chk participated" ${s.participated ? 'checked' : ''} onchange="toggleField('${s.id}','participated',this.checked)"></td>
+        <td><input type="text" class="notes-input" value="${escapeHtml(s.notes || '')}" placeholder="Notes…" oninput="setNote('${s.id}', this.value)"></td>
+      </tr>
+    `).join('');
+
+    wrap.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th class="center">#</th>
+            <th>Student Name</th>
+            <th class="center">Attended</th>
+            <th class="center">Participated Well</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function toggleField(id, field, value) {
+    const s = state.students.find(s => s.id === id);
+    if (s) { s[field] = value; save(); }
+  }
+  function setNote(id, value) {
+    const s = state.students.find(s => s.id === id);
+    if (s) { s.notes = value; save(); }
+  }
+
+  function openModal() {
+    document.getElementById('namesInput').value = state.students.map(s => s.name).join('\n');
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('namesInput').focus();
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  function applyNames() {
+    const raw = document.getElementById('namesInput').value;
+    const names = raw.split('\n').map(n => n.trim()).filter(Boolean);
+
+    const existingByName = {};
+    state.students.forEach(s => { existingByName[s.name.toLowerCase()] = s; });
+
+    const newStudents = names.map(name => {
+      const existing = existingByName[name.toLowerCase()];
+      if (existing) return existing;
+      return { id: uid(), name, attended: false, participated: false, notes: '' };
+    });
+
+    state.students = newStudents;
+    save();
+    renderTable();
+    closeModal();
+    showToast(`Roster updated — ${names.length} student${names.length === 1 ? '' : 's'}`);
+  }
+
+  function clearAll() {
+    if (!state.students.length) return;
+    if (!confirm('Clear the entire roster? This cannot be undone.')) return;
+    state.students = [];
+    save();
+    renderTable();
+    showToast('Roster cleared');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function getMetaLine() {
+    const m = state.meta;
+    const parts = [];
+    if (m.teacher) parts.push('Teacher: ' + m.teacher);
+    if (m.level) parts.push('Level Band: ' + m.level);
+    if (m.week) parts.push('Week Of: ' + m.week);
+    if (m.mode) parts.push('Mode: ' + m.mode);
+    return parts;
+  }
+
+  function exportXLSX() {
+    if (!state.students.length) { showToast('Add students before exporting'); return; }
+    const wb = XLSX.utils.book_new();
+    const aoa = [];
+    aoa.push(['Listening & Speaking Class — Weekly Participation Rubric']);
+    aoa.push([]);
+    aoa.push(['Teacher:', state.meta.teacher || '']);
+    aoa.push(['Level Band (Basic / Independent / Proficient):', state.meta.level || '']);
+    aoa.push(['Week Of:', state.meta.week || '']);
+    aoa.push(['Mode:', state.meta.mode || '']);
+    aoa.push([]);
+    aoa.push(['#', 'Student Name', 'Attended', 'Participated Well', 'Notes']);
+    state.students.forEach((s, i) => {
+      aoa.push([i + 1, s.name, s.attended ? 'X' : '', s.participated ? 'X' : '', s.notes || '']);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 4 }, { wch: 26 }, { wch: 12 }, { wch: 18 }, { wch: 36 }];
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Weekly Rubric');
+
+    const filename = buildFilename('xlsx');
+    XLSX.writeFile(wb, filename);
+    showToast('XLSX downloaded');
+  }
+
+  function exportPDF() {
+    if (!state.students.length) { showToast('Add students before exporting'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+
+    const navy = [12, 35, 64];
+    const gold = [211, 159, 16];
+    const inkS = [61, 61, 61];
+
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, doc.internal.pageSize.getWidth(), 70, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(18);
+    doc.text('Weekly Participation Rubric', 40, 32);
+    doc.setFontSize(10);
+    doc.setTextColor(230, 220, 190);
+    doc.text('ApproachUSA · Listening & Speaking', 40, 50);
+
+    doc.setTextColor(...inkS);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const metaLines = getMetaLine();
+    let metaY = 90;
+    metaLines.forEach((line, i) => {
+      const x = 40 + (i % 2) * 260;
+      const y = metaY + Math.floor(i / 2) * 16;
+      doc.text(line, x, y);
+    });
+    const startY = metaLines.length ? metaY + Math.ceil(metaLines.length / 2) * 16 + 12 : metaY;
+
+    const body = state.students.map((s, i) => [
+      i + 1,
+      s.name,
+      s.attended ? 'X' : '',
+      s.participated ? 'X' : '',
+      s.notes || ''
+    ]);
+
+    doc.autoTable({
+      startY: startY,
+      head: [['#', 'Student Name', 'Attended', 'Participated Well', 'Notes']],
+      body: body,
+      styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 6, textColor: inkS },
+      headStyles: { fillColor: navy, textColor: [239, 233, 217], fontStyle: 'bold', fontSize: 8.5 },
+      alternateRowStyles: { fillColor: [248, 244, 236] },
+      columnStyles: {
+        0: { cellWidth: 24, halign: 'center' },
+        1: { cellWidth: 130 },
+        2: { cellWidth: 60, halign: 'center' },
+        3: { cellWidth: 90, halign: 'center' },
+        4: { cellWidth: 'auto' }
+      },
+      margin: { left: 40, right: 40 },
+      didParseCell: function (data) {
+        if ((data.column.index === 2 || data.column.index === 3) && data.section === 'body' && data.cell.raw === 'X') {
+          data.cell.styles.textColor = data.column.index === 2 ? navy : gold;
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+
+    doc.save(buildFilename('pdf'));
+    showToast('PDF downloaded');
+  }
+
+  function buildFilename(ext) {
+    const week = state.meta.week ? state.meta.week : new Date().toISOString().slice(0, 10);
+    const teacher = state.meta.teacher ? state.meta.teacher.replace(/\s+/g, '_') : 'rubric';
+    return `ApproachUSA_Rubric_${teacher}_${week}.${ext}`;
+  }
+
+  // init
+  load();
+  renderMeta();
+  renderTable();
+</script>
+
+</body>
+</html>
