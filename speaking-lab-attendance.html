@@ -166,6 +166,24 @@
 
   .footer-note { margin-top: 1rem; font-size: 0.78rem; color: var(--muted); text-align: center; }
 
+  /* RUBRIC CARD */
+  .rubric-card {
+    display: none; position: relative; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; overflow: hidden;
+  }
+  .rubric-card.open { display: block; }
+  .rubric-card .corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); z-index: 2; }
+  .rubric-card .corner.tl { top: 7px; left: 7px; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
+  .rubric-card .corner.br { bottom: 7px; right: 7px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+  .rubric-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .rubric-card-header h3 { font-size: 1.15rem; }
+  .rubric-card table { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .rubric-card .close-btn {
+    background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1.3rem;
+    line-height: 1; padding: 0.2rem;
+  }
+  .rubric-card .close-btn:hover { color: var(--navy); }
+
   /* MODAL */
   .modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(8,22,41,0.55); z-index: 100;
@@ -249,6 +267,61 @@
         <label class="section-check"><input type="checkbox" class="section-chk" value="Section 3"> Section 3</label>
         <label class="section-check"><input type="checkbox" class="section-chk" value="Section 4"> Section 4</label>
       </div>
+    </div>
+    <div class="field"></div>
+    <div class="field" style="display: flex; align-items: flex-end; justify-content: flex-end;"><button class="btn btn--primary" onclick="openRubricCard()" id="rubricInfoBtn">Rubric info</button></div>
+
+  </div>
+
+  <div class="rubric-card" id="rubricCard">
+    <span class="corner tl"></span><span class="corner br"></span>
+    <div class="rubric-card-header">
+      <h3>Participation Rubric</h3>
+      <button class="close-btn" onclick="closeRubricCard()" aria-label="Close rubric">&times;</button>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Effort to Speak</th>
+            <th>Use of English</th>
+            <th>Listening &amp; Engagement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>4 — Exceeds</strong></td>
+            <td>Volunteers without being called on; attempts more than required</td>
+            <td>Stays in English, even when it's hard; uses gestures/simple words instead of switching to L1</td>
+            <td>Responds to peers, asks for repetition or clarification</td>
+          </tr>
+          <tr>
+            <td><strong>3 — Meets</strong></td>
+            <td>Speaks whenever prompted; completes the task</td>
+            <td>Tries English first; brief L1 only when stuck</td>
+            <td>Attentive, follows along, participates in all activities</td>
+          </tr>
+          <tr>
+            <td><strong>2 — Developing</strong></td>
+            <td>Speaks only when directly called on; very short attempts</td>
+            <td>Switches to L1 quickly</td>
+            <td>Present and following, needs prompting</td>
+          </tr>
+          <tr>
+            <td><strong>1 — Minimal</strong></td>
+            <td>Avoids speaking, passes on turns</td>
+            <td>Mostly L1 or silent</td>
+            <td>Off task, on phone, disengaged</td>
+          </tr>
+          <tr>
+            <td><strong>0 — Absent</strong></td>
+            <td>—</td>
+            <td>—</td>
+            <td>Not present</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -461,6 +534,12 @@ Aiko Tanaka"></textarea>
   }
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function openRubricCard() {
+    document.getElementById('rubricCard').classList.add('open');
+  }
+  function closeRubricCard() {
+    document.getElementById('rubricCard').classList.remove('open');
   }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
