@@ -66,7 +66,7 @@
   .meta-card {
     position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
     padding: 1.5rem 1.5rem; margin-bottom: 1.5rem;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;
+    display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;
   }
   .meta-card .corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); }
   .meta-card .corner.tl { top: 7px; left: 7px; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
@@ -80,6 +80,14 @@
     font-family: var(--sans); font-size: 0.9rem; color: var(--ink); background: var(--paper-w);
   }
   .field input:focus, .field select:focus { outline: 2px solid var(--gold-b); outline-offset: 1px; }
+  .section-checks {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; padding: 0.5rem 0.65rem;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--paper-w); min-height: 2.4rem;
+  }
+  .section-check {
+    display: inline-flex !important; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--ink); cursor: pointer; margin-top: 0.35rem;
+  }
+  .section-check input { cursor: pointer; width: auto; }
 
   /* TOOLBAR */
   .toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; }
@@ -129,20 +137,25 @@
   }
   .notes-input:focus { background: var(--paper); outline: 1px solid var(--line); }
 
-  /* Custom checkbox */
-  .chk {
-    appearance: none; -webkit-appearance: none; width: 22px; height: 22px; border-radius: 5px;
-    border: 1.5px solid var(--line); background: var(--paper); cursor: pointer; position: relative;
-    display: inline-block; vertical-align: middle;
+  /* Rubric rating select */
+  .rubric-select { position: relative; display: inline-block; }
+  .rubric-select-btn {
+    width: 2.6rem; height: 2rem; border-radius: 6px; border: 1.5px solid var(--line);
+    background: var(--paper); color: var(--navy); font-family: var(--sans); font-weight: 700;
+    font-size: 0.9rem; cursor: pointer;
   }
-  .chk:hover { border-color: var(--gold-b); }
-  .chk:checked { background: var(--navy); border-color: var(--navy); }
-  .chk:checked::after {
-    content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px;
-    border: solid var(--gold); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+  .rubric-select-btn:hover { border-color: var(--gold-b); }
+  .rubric-select-btn.is-set { background: var(--navy); color: var(--warm-w); border-color: var(--navy); }
+  .rubric-select-menu {
+    display: none; flex-direction: column; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 6px; box-shadow: 0 10px 28px rgba(0,0,0,0.18); z-index: 250; overflow: hidden;
   }
-  .chk.participated:checked { background: var(--gold-b); border-color: var(--gold-b); }
-  .chk.participated:checked::after { border-color: var(--navy-d); }
+  .rubric-select-menu.open { display: flex; }
+  .rubric-option {
+    padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--ink); cursor: pointer; white-space: nowrap;
+  }
+  .rubric-option:hover { background: var(--sky); }
+  .rubric-option.selected { background: var(--navy-s); font-weight: 700; color: var(--navy); }
 
   .empty-state {
     padding: 3rem 1.5rem; text-align: center; color: var(--muted);
@@ -216,16 +229,6 @@
       <input type="text" id="metaTeacher" placeholder="e.g. John">
     </div>
     <div class="field">
-      <label for="metaLevel">Level Band</label>
-      <select id="metaLevel">
-        <option value="">Select…</option>
-        <option>Basic</option>
-        <option>Independent</option>
-        <option>Proficient</option>
-        <option>AAP / BP</option>
-      </select>
-    </div>
-    <div class="field">
       <label for="metaWeek">Week Of</label>
       <input type="date" id="metaWeek">
     </div>
@@ -236,6 +239,15 @@
         <option>In-Person</option>
         <option>Online</option>
       </select>
+    </div>
+    <div class="field">
+      <label>Section</label>
+      <div class="section-checks" id="metaLevelGroup">
+        <label class="section-check"><input type="checkbox" class="section-chk" value="Section 1"> Section 1</label>
+        <label class="section-check"><input type="checkbox" class="section-chk" value="Section 2"> Section 2</label>
+        <label class="section-check"><input type="checkbox" class="section-chk" value="Section 3"> Section 3</label>
+        <label class="section-check"><input type="checkbox" class="section-chk" value="Section 4"> Section 4</label>
+      </div>
     </div>
   </div>
 
@@ -287,7 +299,7 @@ Aiko Tanaka"></textarea>
   const STORAGE_KEY = 'approachusa_rubric_v1';
   let state = {
     meta: { teacher: '', level: '', week: '', mode: '' },
-    students: [] // { id, name, attended, participated, notes }
+    students: [] // { id, name, effort, english, listening, notes }
   };
 
   function uid() { return 'r' + Math.random().toString(36).slice(2, 10); }
@@ -305,21 +317,27 @@ Aiko Tanaka"></textarea>
 
   function renderMeta() {
     document.getElementById('metaTeacher').value = state.meta.teacher || '';
-    document.getElementById('metaLevel').value = state.meta.level || '';
     document.getElementById('metaWeek').value = state.meta.week || '';
     document.getElementById('metaMode').value = state.meta.mode || '';
+    const selectedSections = (state.meta.level || '').split(',').map(s => s.trim()).filter(Boolean);
+    document.querySelectorAll('.section-chk').forEach(chk => {
+      chk.checked = selectedSections.includes(chk.value);
+    });
   }
   function syncMetaFromInputs() {
     state.meta.teacher = document.getElementById('metaTeacher').value;
-    state.meta.level = document.getElementById('metaLevel').value;
     state.meta.week = document.getElementById('metaWeek').value;
     state.meta.mode = document.getElementById('metaMode').value;
+    state.meta.level = Array.from(document.querySelectorAll('.section-chk:checked')).map(chk => chk.value).join(', ');
     save();
   }
-  ['metaTeacher','metaLevel','metaWeek','metaMode'].forEach(id => {
+  ['metaTeacher','metaWeek','metaMode'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('input', syncMetaFromInputs);
     el.addEventListener('change', syncMetaFromInputs);
+  });
+  document.querySelectorAll('.section-chk').forEach(chk => {
+    chk.addEventListener('change', syncMetaFromInputs);
   });
 
   function renderTable() {
@@ -336,8 +354,9 @@ Aiko Tanaka"></textarea>
       <tr data-id="${s.id}">
         <td class="row-num">${i + 1}</td>
         <td class="student-name">${escapeHtml(s.name)}</td>
-        <td class="center"><input type="checkbox" class="chk" ${s.attended ? 'checked' : ''} onchange="toggleField('${s.id}','attended',this.checked)"></td>
-        <td class="center"><input type="checkbox" class="chk participated" ${s.participated ? 'checked' : ''} onchange="toggleField('${s.id}','participated',this.checked)"></td>
+        <td class="center">${rubricCell(s.id, 'effort', s.effort)}</td>
+        <td class="center">${rubricCell(s.id, 'english', s.english)}</td>
+        <td class="center">${rubricCell(s.id, 'listening', s.listening)}</td>
         <td><input type="text" class="notes-input" value="${escapeHtml(s.notes || '')}" placeholder="Notes…" oninput="setNote('${s.id}', this.value)"></td>
       </tr>
     `).join('');
@@ -348,8 +367,9 @@ Aiko Tanaka"></textarea>
           <tr>
             <th class="center">#</th>
             <th>Student Name</th>
-            <th class="center">Attended</th>
-            <th class="center">Participated Well</th>
+            <th class="center">Effort to Speak</th>
+            <th class="center">Use of English</th>
+            <th class="center">Listening &amp; Engagement</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -357,6 +377,68 @@ Aiko Tanaka"></textarea>
       </table>
     `;
   }
+
+  const RUBRIC = [
+    { v: 0, label: '0 – Absent' },
+    { v: 1, label: '1 – Minimal' },
+    { v: 2, label: '2 – Developing' },
+    { v: 3, label: '3 – Meets' },
+    { v: 4, label: '4 – Exceeds' }
+  ];
+
+  function rubricCell(studentId, field, value) {
+    const hasValue = value !== null && value !== undefined && value !== '';
+    const btnText = hasValue ? value : '–';
+    const options = RUBRIC.map(o => `<div class="rubric-option${hasValue && o.v === value ? ' selected' : ''}" data-value="${o.v}">${o.label}</div>`).join('');
+    return `<div class="rubric-select" data-id="${studentId}" data-field="${field}">
+      <button type="button" class="rubric-select-btn${hasValue ? ' is-set' : ''}">${btnText}</button>
+      <div class="rubric-select-menu" role="listbox">${options}</div>
+    </div>`;
+  }
+
+  function closeAllRubricMenus() {
+    document.querySelectorAll('.rubric-select-menu.open').forEach(m => {
+      m.classList.remove('open');
+      m.style.position = '';
+      m.style.left = '';
+      m.style.top = '';
+      m.style.minWidth = '';
+    });
+  }
+
+  document.getElementById('tableWrap').addEventListener('click', (e) => {
+    const btn = e.target.closest('.rubric-select-btn');
+    if (btn) {
+      e.stopPropagation();
+      const menu = btn.nextElementSibling;
+      const wasOpen = menu.classList.contains('open');
+      closeAllRubricMenus();
+      if (!wasOpen) {
+        const rect = btn.getBoundingClientRect();
+        const menuWidth = Math.max(rect.width, 150);
+        const left = Math.min(rect.left, window.innerWidth - menuWidth - 8);
+        menu.style.position = 'fixed';
+        menu.style.left = Math.max(8, left) + 'px';
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.minWidth = menuWidth + 'px';
+        menu.classList.add('open');
+      }
+      return;
+    }
+    const opt = e.target.closest('.rubric-option');
+    if (opt) {
+      const cell = opt.closest('.rubric-select');
+      toggleField(cell.dataset.id, cell.dataset.field, Number(opt.dataset.value));
+      closeAllRubricMenus();
+      renderTable();
+      return;
+    }
+  });
+  document.addEventListener('click', () => closeAllRubricMenus());
+  window.addEventListener('scroll', () => closeAllRubricMenus(), true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllRubricMenus();
+  });
 
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -393,7 +475,7 @@ Aiko Tanaka"></textarea>
     const newStudents = names.map(name => {
       const existing = existingByName[name.toLowerCase()];
       if (existing) return existing;
-      return { id: uid(), name, attended: false, participated: false, notes: '' };
+      return { id: uid(), name, effort: null, english: null, listening: null, notes: '' };
     });
 
     state.students = newStudents;
@@ -420,11 +502,15 @@ Aiko Tanaka"></textarea>
     window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+  function rubricExportValue(value) {
+    return (value === null || value === undefined || value === '') ? '' : value;
+  }
+
   function getMetaLine() {
     const m = state.meta;
     const parts = [];
     if (m.teacher) parts.push('Teacher: ' + m.teacher);
-    if (m.level) parts.push('Level Band: ' + m.level);
+    if (m.level) parts.push('Sections: ' + m.level);
     if (m.week) parts.push('Week Of: ' + m.week);
     if (m.mode) parts.push('Mode: ' + m.mode);
     return parts;
@@ -437,18 +523,18 @@ Aiko Tanaka"></textarea>
     aoa.push(['Listening & Speaking Class — Weekly Participation Rubric']);
     aoa.push([]);
     aoa.push(['Teacher:', state.meta.teacher || '']);
-    aoa.push(['Level Band (Basic / Independent / Proficient):', state.meta.level || '']);
+    aoa.push(['Sections:', state.meta.level || '']);
     aoa.push(['Week Of:', state.meta.week || '']);
     aoa.push(['Mode:', state.meta.mode || '']);
     aoa.push([]);
-    aoa.push(['#', 'Student Name', 'Attended', 'Participated Well', 'Notes']);
+    aoa.push(['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Notes']);
     state.students.forEach((s, i) => {
-      aoa.push([i + 1, s.name, s.attended ? 'X' : '', s.participated ? 'X' : '', s.notes || '']);
+      aoa.push([i + 1, s.name, rubricExportValue(s.effort), rubricExportValue(s.english), rubricExportValue(s.listening), s.notes || '']);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{ wch: 4 }, { wch: 26 }, { wch: 12 }, { wch: 18 }, { wch: 36 }];
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
+    ws['!cols'] = [{ wch: 4 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 36 }];
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
     XLSX.utils.book_append_sheet(wb, ws, 'Weekly Rubric');
 
     const filename = buildFilename('xlsx');
@@ -490,29 +576,31 @@ Aiko Tanaka"></textarea>
     const body = state.students.map((s, i) => [
       i + 1,
       s.name,
-      s.attended ? 'X' : '',
-      s.participated ? 'X' : '',
+      rubricExportValue(s.effort),
+      rubricExportValue(s.english),
+      rubricExportValue(s.listening),
       s.notes || ''
     ]);
 
     doc.autoTable({
       startY: startY,
-      head: [['#', 'Student Name', 'Attended', 'Participated Well', 'Notes']],
+      head: [['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Notes']],
       body: body,
       styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 6, textColor: inkS },
       headStyles: { fillColor: navy, textColor: [239, 233, 217], fontStyle: 'bold', fontSize: 8.5 },
       alternateRowStyles: { fillColor: [248, 244, 236] },
       columnStyles: {
         0: { cellWidth: 24, halign: 'center' },
-        1: { cellWidth: 130 },
+        1: { cellWidth: 110 },
         2: { cellWidth: 60, halign: 'center' },
-        3: { cellWidth: 90, halign: 'center' },
-        4: { cellWidth: 'auto' }
+        3: { cellWidth: 60, halign: 'center' },
+        4: { cellWidth: 70, halign: 'center' },
+        5: { cellWidth: 'auto' }
       },
       margin: { left: 40, right: 40 },
       didParseCell: function (data) {
-        if ((data.column.index === 2 || data.column.index === 3) && data.section === 'body' && data.cell.raw === 'X') {
-          data.cell.styles.textColor = data.column.index === 2 ? navy : gold;
+        if ([2, 3, 4].includes(data.column.index) && data.section === 'body' && data.cell.raw !== '') {
+          data.cell.styles.textColor = navy;
           data.cell.styles.fontStyle = 'bold';
         }
       }
