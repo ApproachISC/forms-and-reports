@@ -436,6 +436,7 @@ Aiko Tanaka"></textarea>
         <td class="center">${rubricCell(s.id, 'effort', s.effort)}</td>
         <td class="center">${rubricCell(s.id, 'english', s.english)}</td>
         <td class="center">${rubricCell(s.id, 'listening', s.listening)}</td>
+        <td class="center">${studentGrade(s)}</td>
         <td><input type="text" class="notes-input" value="${escapeHtml(s.notes || '')}" placeholder="Notes…" oninput="setNote('${s.id}', this.value)"></td>
       </tr>
     `).join('');
@@ -449,6 +450,7 @@ Aiko Tanaka"></textarea>
             <th class="center">Effort to Speak</th>
             <th class="center">Use of English</th>
             <th class="center">Listening &amp; Engagement</th>
+            <th class="center">Grade</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -457,9 +459,10 @@ Aiko Tanaka"></textarea>
           <tr class="totals-row">
             <td></td>
             <td class="totals-label">Totals</td>
-            <td class="center">${sumField('effort')}</td>
-            <td class="center">${sumField('english')}</td>
-            <td class="center">${sumField('listening')}</td>
+            <td class="center">${avgField('effort')}</td>
+            <td class="center">${avgField('english')}</td>
+            <td class="center">${avgField('listening')}</td>
+            <td class="center">${gradeAverage()}</td>
             <td></td>
           </tr>
         </tfoot>
@@ -467,8 +470,25 @@ Aiko Tanaka"></textarea>
     `;
   }
 
-  function sumField(field) {
-    return state.students.reduce((total, s) => total + (typeof s[field] === 'number' ? s[field] : 0), 0);
+  function avgField(field) {
+    const rated = state.students.filter(s => typeof s[field] === 'number');
+    if (!rated.length) return '–';
+    const total = rated.reduce((sum, s) => sum + s[field], 0);
+    return (total / rated.length).toFixed(1);
+  }
+
+  function studentGrade(s) {
+    const fields = ['effort', 'english', 'listening'];
+    let sum = 0, any = false;
+    fields.forEach(f => { if (typeof s[f] === 'number') { sum += s[f]; any = true; } });
+    return any ? sum : '';
+  }
+
+  function gradeAverage() {
+    const graded = state.students.filter(s => typeof studentGrade(s) === 'number');
+    if (!graded.length) return '–';
+    const total = graded.reduce((sum, s) => sum + studentGrade(s), 0);
+    return (total / graded.length).toFixed(1);
   }
 
   const RUBRIC = [
@@ -626,14 +646,14 @@ Aiko Tanaka"></textarea>
     aoa.push(['Week Of:', state.meta.week || '']);
     aoa.push(['Mode:', state.meta.mode || '']);
     aoa.push([]);
-    aoa.push(['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Notes']);
+    aoa.push(['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Grade', 'Notes']);
     state.students.forEach((s, i) => {
-      aoa.push([i + 1, s.name, rubricExportValue(s.effort), rubricExportValue(s.english), rubricExportValue(s.listening), s.notes || '']);
+      aoa.push([i + 1, s.name, rubricExportValue(s.effort), rubricExportValue(s.english), rubricExportValue(s.listening), studentGrade(s), s.notes || '']);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{ wch: 4 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 36 }];
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+    ws['!cols'] = [{ wch: 4 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 10 }, { wch: 36 }];
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
     XLSX.utils.book_append_sheet(wb, ws, 'Weekly Rubric');
 
     const filename = buildFilename('xlsx');
@@ -678,12 +698,13 @@ Aiko Tanaka"></textarea>
       rubricExportValue(s.effort),
       rubricExportValue(s.english),
       rubricExportValue(s.listening),
+      studentGrade(s),
       s.notes || ''
     ]);
 
     doc.autoTable({
       startY: startY,
-      head: [['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Notes']],
+      head: [['#', 'Student Name', 'Effort to Speak', 'Use of English', 'Listening & Engagement', 'Grade', 'Notes']],
       body: body,
       styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 6, textColor: inkS },
       headStyles: { fillColor: navy, textColor: [239, 233, 217], fontStyle: 'bold', fontSize: 8.5 },
@@ -694,11 +715,12 @@ Aiko Tanaka"></textarea>
         2: { cellWidth: 60, halign: 'center' },
         3: { cellWidth: 60, halign: 'center' },
         4: { cellWidth: 70, halign: 'center' },
-        5: { cellWidth: 'auto' }
+        5: { cellWidth: 45, halign: 'center' },
+        6: { cellWidth: 'auto' }
       },
       margin: { left: 40, right: 40 },
       didParseCell: function (data) {
-        if ([2, 3, 4].includes(data.column.index) && data.section === 'body' && data.cell.raw !== '') {
+        if ([2, 3, 4, 5].includes(data.column.index) && data.section === 'body' && data.cell.raw !== '') {
           data.cell.styles.textColor = navy;
           data.cell.styles.fontStyle = 'bold';
         }
