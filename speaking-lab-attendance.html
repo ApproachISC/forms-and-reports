@@ -124,11 +124,16 @@
     font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: left;
     padding: 0.75rem 0.85rem;
   }
-  thead th.center, tbody td.center { text-align: center; }
+  thead th.center, tbody td.center, tfoot td.center { text-align: center; }
   tbody td { padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:nth-child(even) { background: var(--warm-l); }
   tbody tr:hover { background: var(--sky); }
+  tfoot .totals-row td {
+    padding: 0.6rem 0.85rem; border-top: 2px solid var(--navy); background: var(--navy-s);
+    font-weight: 700; color: var(--navy);
+  }
+  tfoot .totals-label { font-family: var(--serif); font-size: 0.98rem; }
   .row-num { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; width: 2.2rem; }
   .student-name { font-family: var(--serif); font-size: 0.98rem; color: var(--navy); }
   .notes-input {
@@ -448,8 +453,22 @@ Aiko Tanaka"></textarea>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td></td>
+            <td class="totals-label">Totals</td>
+            <td class="center">${sumField('effort')}</td>
+            <td class="center">${sumField('english')}</td>
+            <td class="center">${sumField('listening')}</td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
     `;
+  }
+
+  function sumField(field) {
+    return state.students.reduce((total, s) => total + (typeof s[field] === 'number' ? s[field] : 0), 0);
   }
 
   const RUBRIC = [
